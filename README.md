@@ -1,9 +1,12 @@
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
+### `npm run server || yarn server`
 
-In the project directory, you can run:
-
+start server (Node.js, Express and react.app)
+    React application: http://localhost:3000
+    Express server: http://localhost.3001
+Before use this comand, start please mongo server: sudo systemctl start mongod - for linux, or use special links on Windows-based PC-s
 ### `yarn start`
 
 Runs the app in the development mode.<br />
