@@ -4,8 +4,9 @@ const typicode = {
         const fetchedData = await fetch(baseUrl + 'users')
         return fetchedData.json()
     },
-    getUserPosts(userId) {
-
+    async getUserPosts(userId) {
+        let fetchedPosts = await fetch(baseUrl + 'posts?userId=' + userId)
+        return fetchedPosts.json()
     }
 }
 

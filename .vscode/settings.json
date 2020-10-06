@@ -1,0 +1,10 @@
+{
+  "files.exclude": {
+    "node_modules": true,
+    ".vscode": true,
+    ".idea": true,
+    ".env": true,
+    "package-lock.json": true,
+    "yarn.lock": true
+  }
+}

@@ -4,6 +4,7 @@ const bodyParser = require('body-parser');
 const pino = require('express-pino-logger')();
 const mongo = require('mongodb').MongoClient
 const dburl = 'mongodb://localhost:27017'
+
 const dbOptions = {
     useUnifiedTopology: true,
     useNewUrlParser: true
@@ -44,22 +45,23 @@ app.get('/api/savedcards', (req, res) => {
     })
 });
 
-app.post('/api/addcard',(req, res) => {
-    console.log(req.body)
+app.post('/api/addcard', (req, res) => {
+    const {id, name, username, website, address} = req.body
     const cardData = {
-        id: req.body.id,
-        name: req.body.name,
-        username: req.body.username,
-        website: req.body.website,
-        address: req.body.address
+        id, name, username, website, address
     }
     mongo.connect(dburl, dbOptions, (err, client) => {
-        client.db('base').collection('savedcards').insertOne(cardData, (err) => {
-            if (err) {
-                res.send({error: 'something wrong'})
+        const db = client.db('base')
+        const savedCards = db.collection('savedcards')
+        savedCards.findOne({id: cardData.id}, (err, result) => {
+            err && console.log(err)
+            if (result) {
+                res.status(409).send('Card already exist')
             } else {
-                res.send('New Card successfully added')
-                client.close()
+                savedCards.insertOne(cardData, (err) => {
+                    err && console.log(err)
+                    res.status(201).send('Card succesfuylly saved')
+                })
             }
         })
     })
@@ -70,11 +72,10 @@ app.delete('/api/remove', (req, res) => {
     mongo.connect(dburl, dbOptions, (err, client) => {
         client.db('base').collection('savedcards').deleteOne({id: cardId})
         if (err) {
-            res.send('Card not found')
+            res.status(404).send('Card not found')
         } else {
-            res.send('Card was deleted succesfully')
+            res.status(200).send(`Card with id ${cardId}} was successfully removed`)
         }
-
     })
 })
 

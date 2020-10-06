@@ -1,13 +1,17 @@
-import React, {useEffect, useReducer} from 'react';
+import React, {useCallback, useEffect, useReducer, useState} from 'react';
 import avatarImg from './assets/avatar_1.jpg'
 import './App.css';
 import typicode from "./api/typicode";
 import {initialState, reducer} from "./store/store";
 import CardsBoard from "./Components/CardsBoard";
 import fs_cards from "./api/fs_cards";
+import UserPostsPopUp from "./Components/UserPostsPopUp";
 
 const App = () => {
     const [state, dispatch] = useReducer(reducer, initialState)
+    const [isPopUpShow, PopUpToggleShow] = useState(true)
+    console.log(state)
+
     const setTypiUsersList = async () => {
         const usersCards = await typicode.getUsersList()
         dispatch({
@@ -22,20 +26,62 @@ const App = () => {
     useEffect(() => {
         setTypiUsersList()
     }, [])
-    useEffect(()=> {
+
+    useEffect(() => {
         loadSavedCards()
     }, [])
+    const getUserPosts = async (userId) => {
+        const posts = await typicode.getUserPosts(userId)
+        if (posts.length > 0) {
+            PopUpToggleShow(true)
+            dispatch({type: 'LOAD_USER_POSTS', posts})
 
-    const saveCard = (card) => {
-        dispatch({type: 'SAVE_CARD', card})
-        fs_cards.saveCard(card)
+        }
+    }
+    const clearPosts = () => {
+        if (state.userPosts.length > 0) {
+            PopUpToggleShow(false)
+            dispatch({type: 'LOAD_USER_POSTS', posts: []})
+
+        }
+
+    }
+    const saveCard = async (card) => {
+        const resp = await fs_cards.saveCard(card)
+        resp.status === 201 && dispatch({type: 'SAVE_CARD', card})
     }
 
-    const removeCard = (cardId) => {
-        console.log(cardId)
+    const removeCard = async (card) => {
+        const resp = await fs_cards.removeCard(card.id)
+        resp.status === 200 && dispatch({type: 'REMOVE_CARD', cardId: card.id})
     }
+
+    const checkUnique = useCallback((obj) => {
+        for (let key of state.savedCards) {
+            if (key.id === obj.id) return true
+        }
+    }, [state.savedCards])
+
+    const fillteredArray = useCallback(() => {
+        const array = []
+        for (let obj of state.usersCards) {
+            let result = checkUnique(obj)
+            !result && array.push(obj)
+        }
+        return array
+    }, [checkUnique, state.usersCards])
+
+    useEffect(() => {
+        if (state.savedCards.length > 0) {
+            fillteredArray()
+        }
+    }, [fillteredArray, state.savedCards.length])
+
     return (
         <div className="container vh-100">
+            {(state.userPosts.length > 0 && isPopUpShow) && <UserPostsPopUp onClickHandler={clearPosts} userPosts={state.userPosts}/>}
+            
+        
             <div className="row">
                 <div className="col">
                     <h2 className='text-center'>Full-stack test</h2>
@@ -52,12 +98,12 @@ const App = () => {
                         <div className="col-md-10">
                             <div className="row">
                                 <div className="col-6">
-                                    <CardsBoard cardsList={state.usersCards} saveCard={saveCard} removeCard={removeCard}
-                                                boardTitle='Users Card' s/>
+                                    <CardsBoard cardsList={fillteredArray()} onClickHandler={saveCard}
+                                                boardTitle='Users Cards' isSaved={false} getUserPost={getUserPosts} onDblClickHandler={getUserPosts}/>
                                 </div>
                                 <div className="col-6">
-                                    <CardsBoard cardsList={state.savedCards} saveCard={saveCard} removeCard={removeCard}
-                                                boardTitle='Saved Cards'/>
+                                    <CardsBoard cardsList={state.savedCards} onClickHandler={removeCard}
+                                                boardTitle='Saved Cards' isSaved={true} getUserPost={getUserPosts} onDblClickHandler={getUserPosts}/>
                                 </div>
                             </div>
                         </div>

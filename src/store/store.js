@@ -1,6 +1,7 @@
 export const initialState = {
     usersCards: [],
-    savedCards: []
+    savedCards: [],
+    userPosts: []
 }
 
 export const reducer = (state, action) => {
@@ -17,6 +18,10 @@ export const reducer = (state, action) => {
         case 'LOAD_SAVED_CARDS': {
             return {...state, savedCards: action.savedCards}
         }
+        case 'REMOVE_CARD':
+            return {...state, savedCards: [...state.savedCards.filter(el => el.id !== action.cardId)]}
+        case 'LOAD_USER_POSTS':
+            return {...state, userPosts: action.posts}
         default: return state
     }
 }
