@@ -1,30 +1,27 @@
 import React from "react";
 
-const CardItem = ({name, city, username, website, onClickHandler, id, isSaved, getUserPost, onDblClickHandler}) => {
-    const clickHandler = () => {
-        onClickHandler({
-            id,
-            name,
-            username,
-            website,
-            address: {
-                city: city
-            }
-        })
-    }
+const CardItem = ({card, getUserPost, setCardData, setReplaceCardIndex, sendCardTo, cardIndex, boardId, removeCard}) => {
     return (
         <div className='shadow-sm rounded p-3' draggable={true} onDoubleClick={() => {
-            onDblClickHandler()
-            getUserPost(id)
-        }}>
-            <h4><b>{username}</b></h4>
-            <div><b>Full name:</b> {name}</div>
-            <div><b>City:</b> {city}</div>
-            <div><b>Website</b>: {website}</div>
-            {!isSaved ? <button className='btn btn-success mr-2' onClick={clickHandler}>Save</button> :
-                <button className='btn btn-danger' onClick={clickHandler}>Remove</button>}
-
-
+            getUserPost(card.id)
+        }}
+             onDragStart={() => {
+                 setCardData(card)
+             }}
+             onDragEnter={() => {
+                 console.log(`card index is ${cardIndex}`)
+                 setReplaceCardIndex(cardIndex)
+             }}
+             onDragEnd={sendCardTo}
+        >
+            <h4><b>{card.username}</b></h4>
+            <div><b>Full name:</b> {card.name}</div>
+            <div><b>Index:</b> {cardIndex}</div>
+            <div><b>City:</b> {card.address.city}</div>
+            <div><b>Website</b>: {card.website}</div>
+            {boardId !== 'main_payload' && <button className='btn btn-danger' onClick={() => {
+                removeCard(card.id)
+            }}>Remove</button>}
         </div>
     )
 }

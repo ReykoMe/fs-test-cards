@@ -1,18 +1,31 @@
 import React from "react";
 import CardItem from "./CardItem";
 
-const CardsBoard = ({cardsList, boardTitle, onClickHandler, isSaved, getUserPost, onDblClickHandler}) => {
-    if (cardsList.length < 1) {
-        return <div>Please wait</div>
+const CardsBoard = ( { cards, isSaved, getUserPost, boardId, setBoardReplaceId, setCardData, sendCardTo, setReplaceCardIndex, removeCard, title } ) => {
+
+    const cardIdHandler = ( cardId ) => {
+        removeCard( boardId, cardId )
     }
-    return <>
-        <div className="col">{boardTitle}</div>
-        {cardsList.map(card => {
-            return <CardItem key={card.id} id={card.id} name={card.name} city={card.address.city}
-                             username={card.username} website={card.website} onClickHandler={onClickHandler}
-                             cardsList={cardsList} isSaved={isSaved} getUserPost={getUserPost} onDblClickHandler={onDblClickHandler}
+    return <div className='col v-100' onDragEnter={ () => {
+        console.log( 'Board: ', boardId )
+        setBoardReplaceId( boardId )
+    } }>
+        <h2>{ title }</h2>
+        { cards.length < 1 && <div>Place your first user card here</div> }
+        { cards.map( ( card, index ) => {
+            return <CardItem key={ card.id }
+                card={ card }
+                cardsList={ cards }
+                isSaved={ isSaved }
+                getUserPost={ getUserPost }
+                boardId={ boardId }
+                sendCardTo={ sendCardTo }
+                setCardData={ setCardData }
+                setReplaceCardIndex={ setReplaceCardIndex }
+                cardIndex={ index }
+                removeCard={ cardIdHandler }
             />
-        })}
-    </>
+        } ) }
+    </div>
 }
-export default CardsBoard
+export {CardsBoard}

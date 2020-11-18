@@ -1,111 +1,140 @@
-import React, {useCallback, useEffect, useReducer, useState} from 'react';
+import React, { useCallback, useEffect, useReducer, useState } from 'react';
+import { initialState, reducer } from "./store/store";
+import {CardsBoard} from "./Components/CardsBoard";
+import { UserPostsPopUp } from "./Components/UserPostsPopUp";
+import { BoardsWrapper } from "./Components/BoardsWrapper";
+import {FB_url } from "./api/facebook"
+import {typicode} from "./api/typicode";
+import {fs_cards} from "./api/fs_cards";
 import avatarImg from './assets/avatar_1.jpg'
-import './App.css';
-import typicode from "./api/typicode";
-import {initialState, reducer} from "./store/store";
-import CardsBoard from "./Components/CardsBoard";
-import fs_cards from "./api/fs_cards";
-import UserPostsPopUp from "./Components/UserPostsPopUp";
 
 const App = () => {
-    const [state, dispatch] = useReducer(reducer, initialState)
-    const [isPopUpShow, PopUpToggleShow] = useState(true)
-    console.log(state)
+    const [ state, dispatch ] = useReducer( reducer, initialState )
+    const [ isPopUpShow, PopUpToggleShow ] = useState( true )
 
-    const setTypiUsersList = async () => {
+    //Initial block
+    useEffect( () => {
+        //If have data on response - call set User Data
+        fs_cards.getMe().then( data => data && setUserData( data ) )
+
+        //Clear #=_=_ artefacts after facebook login
+        window.location.href.includes( '#_=_' ) && window.history.pushState( '', document.title, window.location.pathname )
+    }, [] )
+
+    const setTypiUsersList = useCallback( async () => {
         const usersCards = await typicode.getUsersList()
-        dispatch({
+        dispatch( {
             type: 'LOAD_USERS_CARDS',
             usersCards
-        })
-    }
-    const loadSavedCards = async () => {
-        const savedCards = await fs_cards.loadSavedCards().then(res => res.data)
-        dispatch({type: 'LOAD_SAVED_CARDS', savedCards})
-    }
-    useEffect(() => {
-        setTypiUsersList()
-    }, [])
+        } )
+    }, [ dispatch ] )
+    useEffect( () => { setTypiUsersList() }, [ setTypiUsersList ] )
 
-    useEffect(() => {
-        loadSavedCards()
-    }, [])
-    const getUserPosts = async (userId) => {
-        const posts = await typicode.getUserPosts(userId)
-        if (posts.length > 0) {
-            PopUpToggleShow(true)
-            dispatch({type: 'LOAD_USER_POSTS', posts})
+    const setUserData = ( profile ) => {
+        dispatch( {
+            type: 'SET_USER_PROFILE',
+            payload: {
+                _id: profile._id,
+                fb_id: profile.fb_id,
+                name: profile.name,
+                photo: profile.photo
+            }
+        } )
+        dispatch( { type: 'SET_USER_BOARDS', boards: profile.boards } )
+    }
 
+    //LOGIN & LOGOUT blocks
+    const logIn = () => {
+        window.open( FB_url, '_self' )
+    }
+
+    const logOut = () => {
+        document.cookie = "ftc_fb_user_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        dispatch( {
+            type: 'SET_USER_PROFILE',
+            payload: null
+        } )
+        dispatch( { type: 'CLEAR_USER_BOARDS' } )
+    }
+
+   //Get post for user in popup
+    const getUserPosts = async ( userId ) => {
+        const posts = await typicode.getUserPosts( userId )
+        if ( posts.length > 0 ) {
+            PopUpToggleShow( true )
+            dispatch( { type: 'LOAD_USER_POSTS', posts } )
         }
     }
+
+    //Clear user posts when popup close
     const clearPosts = () => {
-        if (state.userPosts.length > 0) {
-            PopUpToggleShow(false)
-            dispatch({type: 'LOAD_USER_POSTS', posts: []})
-
+        if ( state.userPosts.length > 0 ) {
+            PopUpToggleShow( false )
+            dispatch( { type: 'LOAD_USER_POSTS', posts: [] } )
         }
-
-    }
-    const saveCard = async (card) => {
-        const resp = await fs_cards.saveCard(card)
-        resp.status === 201 && dispatch({type: 'SAVE_CARD', card})
     }
 
-    const removeCard = async (card) => {
-        const resp = await fs_cards.removeCard(card.id)
-        resp.status === 200 && dispatch({type: 'REMOVE_CARD', cardId: card.id})
+    //Save card to board (drag & drop)
+    const saveCard = async ( boardId, cardIndex, cardData ) => {
+        if ( boardId === 'main_payload' || !boardId ) {
+            return
+        } else {
+            const resp = await fs_cards.saveCard( state.profileData._id, boardId, cardData, cardIndex )
+            resp.status === 201 ? changeCardPlace( boardId, cardIndex, cardData ) : console.log( 'Already exist in this board' )
+        }
+    }
+    const changeCardPlace = ( boardId, cardIndex, cardData ) => {
+        dispatch( {
+            type: 'CHANGE_CARD_PLACE',
+            boardId,
+            cardIndex,
+            cardData
+        } )
     }
 
-    const checkUnique = useCallback((obj) => {
-        for (let key of state.savedCards) {
-            if (key.id === obj.id) return true
-        }
-    }, [state.savedCards])
-
-    const fillteredArray = useCallback(() => {
-        const array = []
-        for (let obj of state.usersCards) {
-            let result = checkUnique(obj)
-            !result && array.push(obj)
-        }
-        return array
-    }, [checkUnique, state.usersCards])
-
-    useEffect(() => {
-        if (state.savedCards.length > 0) {
-            fillteredArray()
-        }
-    }, [fillteredArray, state.savedCards.length])
+    const removeCard = async ( boardId, cardId ) => {
+        const res = await fs_cards.removeCard( state.profileData._id, boardId, cardId )
+        res.status === 200 ? dispatch( {
+            type: 'REMOVE_CARD',
+            boardId,
+            cardId
+        } ) : console.log( 'Card not found' )
+    }
 
     return (
         <div className="container vh-100">
-            {(state.userPosts.length > 0 && isPopUpShow) && <UserPostsPopUp onClickHandler={clearPosts} userPosts={state.userPosts}/>}
-            
-        
+            {( state.userPosts.length > 0 && isPopUpShow ) && <UserPostsPopUp onClickHandler={ clearPosts } userPosts={ state.userPosts } /> }
             <div className="row">
                 <div className="col">
-                    <h2 className='text-center'>Full-stack test</h2>
+                    <h2 className='text-center'>{ !state.profileData ? 'Guest user' : state.profileData.name }</h2>
                 </div>
             </div>
             <div className="row">
                 <div className="col">
                     <div className="row">
                         <div className="col-md-2">
-                            <img src={avatarImg} alt={avatarImg} className='w-100'/>
-                            <div className='text-secondary'>You not loginned, please, login to make changes</div>
-                            <button className="btn btn-primary">Social login</button>
+                            <img src={ !state.profileData ? avatarImg : state.profileData.photo } alt={ avatarImg } className='w-100 d-block mb-2 rounded' />
+                            { !state.profileData && <div className='text-secondary'>You not loginned, please, login to make changes</div> }
+                            <div>
+                                { !state.profileData ? <>
+                                    <div className='text-secondary'>Login with: </div>
+                                    <button className="btn btn-primary font-weight-bold" onClick={ logIn }>Facebook</button>
+                                </> : <button className='btn btn-danger font-weight-bold' onClick={ logOut }>Logout</button> }
+                            </div>
+
                         </div>
                         <div className="col-md-10">
-                            <div className="row">
-                                <div className="col-6">
-                                    <CardsBoard cardsList={fillteredArray()} onClickHandler={saveCard}
-                                                boardTitle='Users Cards' isSaved={false} getUserPost={getUserPosts} onDblClickHandler={getUserPosts}/>
-                                </div>
-                                <div className="col-6">
-                                    <CardsBoard cardsList={state.savedCards} onClickHandler={removeCard}
-                                                boardTitle='Saved Cards' isSaved={true} getUserPost={getUserPosts} onDblClickHandler={getUserPosts}/>
-                                </div>
-                            </div>
+                            <BoardsWrapper changeCardPlace={ changeCardPlace } saveCard={ saveCard }>
+                                { state.boards.map( board => <CardsBoard boardId={ board._id }
+                                    title={ board.title }
+                                    cards={ board.cards }
+                                    saveCard={ saveCard }
+                                    removeCard={ removeCard }
+                                    getUserPost={ getUserPosts }
+                                    key={ board._id }
+                                /> )
+                                }
+                            </BoardsWrapper>
                         </div>
                     </div>
                 </div>

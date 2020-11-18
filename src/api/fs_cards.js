@@ -1,28 +1,43 @@
-const url = 'http://localhost:3001/api/'
+import fetch from "node-fetch"
+
+const url = 'http://localhost:3001/api'
 const fs_cards = {
-    async saveCard(card) {
-        return await fetch(url + 'addcard', {
+    async getMe () {
+        if (document.cookie.includes('ftc_fb_user_token')) {
+            return await fetch(`${url}/auth/me`, {
+                method: 'GET',
+                credentials: 'include',
+            }).then(res => res.status===200 && res.json())
+        }
+    },
+   
+    async saveCard(userId, boardId, cardData, cardIndex) {
+        return await fetch(url + '/cards', {
             method: 'POST',
-            body: JSON.stringify(card),
+            body: JSON.stringify({
+                userId,
+                boardId,
+                cardData,
+                cardIndex
+            }),
             headers: {
                 "Content-Type": "application/json"
-            },
+            }
         }).then(res => res)
     },
-    async loadSavedCards() {
-        const fetchedData = await fetch(url + 'savedcards')
-        return fetchedData.json()
-    },
-    async removeCard(cardId) {
-        return await fetch(url + 'remove', {
-                method: 'DELETE',
-                body: JSON.stringify({id: cardId}),
-                headers: {
-                    "Content-Type": "application/json"
-                },
+    async removeCard(userId, boardId, cardId) {
+        return await fetch (url + '/cards', {
+            method: 'DELETE',
+            body: JSON.stringify({
+                userId,
+                boardId,
+                cardId
+            }),
+            headers: {
+                "Content-Type": "application/json"
             }
-        )
-    },
+        }).then(res => res)
+    }
 }
 
-export default fs_cards
+export {fs_cards}
