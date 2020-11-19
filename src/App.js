@@ -3,19 +3,19 @@ import {initialState, reducer} from "./store/store";
 import {CardsBoard} from "./Components/CardsBoard";
 import {UserPostsPopUp} from "./Components/UserPostsPopUp";
 import {BoardsWrapper} from "./Components/BoardsWrapper";
-import {FB_url} from "./api/facebook"
+import {fbUrl} from "./api/facebook"
 import {typicode} from "./api/typicode";
-import {fs_cards} from "./api/fs_cards";
+import {fsCards} from "./api/fs_cards";
 import avatarImg from './assets/avatar_1.jpg'
 
 const App = () => {
     const [state, dispatch] = useReducer(reducer, initialState)
     const [isPopUpShow, PopUpToggleShow] = useState(true)
-    console.log(state)
+    
     //Initial block
     useEffect(() => {
         //If have data on response - call set User Data
-        fs_cards.getMe().then(data => data && setUserData(data))
+        fsCards.getMe().then(data => data && setUserData(data))
 
         //Clear #=_=_ artefacts after facebook login
         window.location.href.includes('#_=_') && window.history.pushState('', document.title, window.location.pathname)
@@ -47,7 +47,7 @@ const App = () => {
 
     //LOGIN & LOGOUT blocks
     const logIn = () => {
-        window.open(FB_url, '_self')
+        window.open(fbUrl, '_self')
     }
 
     const logOut = () => {
@@ -81,7 +81,7 @@ const App = () => {
         if (boardId === 'main_payload' || !boardId) {
             return
         } else {
-            const resp = await fs_cards.saveCard(state.profileData._id, boardId, cardData, cardIndex)
+            const resp = await fsCards.saveCard(state.profileData._id, boardId, cardData, cardIndex)
             resp.status === 201 ? changeCardPlace(boardId, cardIndex, cardData) : console.log('Already exist in this board')
         }
     }
@@ -95,7 +95,7 @@ const App = () => {
     }
 
     const removeCard = async (boardId, cardId) => {
-        const res = await fs_cards.removeCard(state.profileData._id, boardId, cardId)
+        const res = await fsCards.removeCard(state.profileData._id, boardId, cardId)
         res.status === 200 ? dispatch({
             type: 'REMOVE_CARD',
             boardId,
@@ -104,7 +104,7 @@ const App = () => {
     }
     const createBoard = async () => {
         const boardId = state.boards.length
-        const res = await fs_cards.createBoard(state.profileData._id, boardId)
+        const res = await fsCards.createBoard(state.profileData._id, boardId)
         res.status === 200 && dispatch({
             type: 'CREATE_NEW_BOARD',
             //FIXME можно отправлять с сервера доску, которая была создана там, дабы избежать дублирования кода на
@@ -118,7 +118,7 @@ const App = () => {
     }
     const removeBoard = async (boardId) => {
         console.log(boardId)
-        const res = await fs_cards.removeBoard(state.profileData._id, boardId)
+        const res = await fsCards.removeBoard(state.profileData._id, boardId)
         res.status === 200 && dispatch({
             type: 'REMOVE_BOARD',
             boardId
