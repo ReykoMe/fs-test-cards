@@ -11,8 +11,8 @@ const fs_cards = {
         }
     },
    
-    async saveCard(userId, boardId, cardData, cardIndex) {
-        return await fetch(url + '/cards', {
+    saveCard(userId, boardId, cardData, cardIndex) {
+        return fetch(url + '/cards', {
             method: 'POST',
             body: JSON.stringify({
                 userId,
@@ -25,8 +25,8 @@ const fs_cards = {
             }
         }).then(res => res)
     },
-    async removeCard(userId, boardId, cardId) {
-        return await fetch (url + '/cards', {
+   removeCard(userId, boardId, cardId) {
+        return fetch (url + '/cards', {
             method: 'DELETE',
             body: JSON.stringify({
                 userId,
@@ -37,6 +37,32 @@ const fs_cards = {
                 "Content-Type": "application/json"
             }
         }).then(res => res)
+    },
+     createBoard (userId, boardId) {
+      return fetch(url + '/boards', {
+          method: 'POST',
+          body: JSON.stringify(
+              {
+                  userId,
+                  boardId
+              }
+          ),
+          headers: {
+              "Content-Type": "application/json"
+          }
+      })
+    },
+    removeBoard (userId, boardId){
+        return fetch(url + '/boards', {
+            method: 'DELETE',
+            body: JSON.stringify({
+                userId,
+                boardId
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
     }
 }
 
