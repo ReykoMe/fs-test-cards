@@ -1,18 +1,17 @@
 const app_secret = process.env.FB_APP_SECRET
 const FB = require('../api/facebook.js')
-const {ObjectId} = require('mongodb')
 
 const getFbData = async (req, res) => {
     const code = req.query.code
-    const fb_user_data = await FB._getUserToken(app_secret, code)
+    const fb_user_data = await FB.getUserToken(app_secret, code)
     const access_token = await fb_user_data.access_token
     res.cookie('ftc_fb_user_token', access_token, {
         maxAge: 90000000
     })
-    const fb_user = await FB._getUserData(access_token)
+    const fb_user = await FB.getUserData(access_token)
     const user = await req.app.db.collection('users').findOne({fb_id: fb_user.id})
     if (!user) {
-        const fb_user_photo = await FB._getUserPhoto(access_token)
+        const fb_user_photo = await FB.getUserPhoto(access_token)
         const {id, first_name, last_name} = fb_user
         req.app.db.collection('users').insertOne({
             fb_id: id,
@@ -34,7 +33,7 @@ const sendUserData = async (req, res) => {
     if (!ftc_fb_user_token) {
         return res.status(304).send('Please, authorise first')
     } else {
-        const fb_user_data = await FB._getUserData(ftc_fb_user_token)
+        const fb_user_data = await FB.getUserData(ftc_fb_user_token)
         const user = await req.app.db.collection('users').findOne({fb_id: fb_user_data.id})
         return res.send(user)
     }
